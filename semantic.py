@@ -1,8 +1,7 @@
 import nltk
 from nltk import word_tokenize
 import pandas as pd
-import sys
-sys.path.append('../.')
+
 
 from stemming.porter import stem
 
