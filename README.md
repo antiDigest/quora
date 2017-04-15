@@ -1,12 +1,21 @@
 # Information on files:
 
+# Methods Implemented
 
-## overlap.py
+### Cosine Similarity using TF-IDF Weighting
 
-*	Runs over the sentences to find out the best possible sense of the sentence and find the most overlap among the two sentences using the senses.
+*	Calculating TF-IDF vector for each sentence and finding the cosine similarity measure for two TF-IDF vectors calculated from the question pairs.
+
+### Semantic Similarity Using Adapted Lesk algorithm:
+
+*	The *adapted Lesk Algorithm* uses context instead of just one single word.
+The context is defined as k words around the word.
+All the senses of all the words around the given word identify their glosses.
+These glosses are compared with different glosses of all the senses for that particular word.
+The overall score for the word is calculated using a method (as given in the SLP 2nd Edition)
+The best sense is the one with the max overall score.
 
 *	
-
 
 ## Some Quirks:
 
@@ -26,8 +35,12 @@
 *	Entailment using Logic Representation of text (Extremely hard)
 
 
-# TODO:
+## Options (research found):
 
-1.	Find semantic similarity between two sentences.
+1.	Semantic similarity using Maximal Weighted Bipartite Graph Matching
 
-2.	Implement lexical chains
+2.	Find semantic similarity between two sentences.
+
+3.	From Word Embeddings to Document Distances
+
+4.	
