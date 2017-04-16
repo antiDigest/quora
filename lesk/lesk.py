@@ -12,7 +12,7 @@ class Lesk(object):
     def __init__(self, sentence):
         self.sentence = sentence
         self.meanings = {}
-        for word in word_tokenize(sentence):
+        for word in sentence:
             self.meanings[word] = ''
 
     def getSenses(self, word):
@@ -22,8 +22,6 @@ class Lesk(object):
     def getGloss(self, senses):
 
         gloss = {}
-
-        # print senses
 
         for sense in senses:
             gloss[sense.name()] = []
@@ -46,17 +44,14 @@ class Lesk(object):
         overlap = 0
 
         # Step
-        for i in range(len(set1)):
-            for j in range(len(set2)):
-                for word in set1[i]:
-                    if word in set2[j]:
-                        overlap += 1
+        for word in set1:
+            if word in set2:
+                overlap += 1
 
         return overlap
 
     def overlapScore(self, word1, word2):
 
-        # print word1, word2
         gloss_set1 = self.getAll(word1)
         if self.meanings[word2] == '':
             gloss_set2 = self.getAll(word2)
@@ -69,7 +64,6 @@ class Lesk(object):
             for j in gloss_set2.keys():
                 score[i] += self.Score(gloss_set1[i], gloss_set2[j])
 
-        # print score
         max_score = 0
         for i in gloss_set1.keys():
             if score[i] > max_score:
@@ -80,19 +74,26 @@ class Lesk(object):
 
     def lesk(self, word, sentence):
         maxOverlap = 0
-        context = word_tokenize(sentence.lower())
+        context = sentence
         word_sense = []
+        meaning = {}
+
+        for sense in self.getSenses(word):
+            meaning[sense.name()] = 0
+
         for word_context in context:
-            # for sense in senses:
             if not word == word_context:
-                self.meanings[word] = self.overlapScore(word, word_context)[0]
+                score = self.overlapScore(word, word_context)
+                meaning[score[0]] += score[1]
+
+        self.meanings[word] = max(meaning.keys(), key=lambda x: meaning[x])
 
         return word, self.meanings[word], wn.synset(self.meanings[word]).definition()
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
 
-#     sentence = 'we take interest in him'
-#     sense = Lesk(sentence)
+    sentence = 'take interest him serious'
+    sense = Lesk(sentence)
 
-#     for word in word_tokenize(sentence):
-#         print sense.lesk(word, sentence)
+    for word in word_tokenize(sentence):
+        print sense.lesk(word, sentence)
