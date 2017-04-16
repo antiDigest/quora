@@ -1,42 +1,32 @@
 import nltk
 from nltk import word_tokenize
 import pandas as pd
+from nltk.corpus import wordnet as wn
 
+import json
 
 from stemming.porter import stem
-
+from lesk.lesk import Lesk
 from utils.tfidf import tfidf
+from utils.similarity import path
+from utils.basic import tokenize, posTag, stemmer
 
 
-def tokenize(q1, q2):
-    """
-        q1 and q2 are sentences/questions. Function returns a list of tokens for both.
-    """
-    return word_tokenize(q1), word_tokenize(q2)
+def computePath(q1, q2):
+    wordsim = {}
+    # maxsim = 0.0
+    for word1 in q1:
+        wordsim[word1[0]] = None
+        maxsim = 0.0
+        for word2 in q2:
+            # print word1[1], word2[1]
+            sim = path(wn.synset(word1[1]), wn.synset(word2[1]))
+            # print 'Path similarity', sim
+            if sim > maxsim and sim != None:
+                maxsim = sim
+                wordsim[word1[0]] = (word2[0], sim)
 
-
-def posTag(q1, q2):
-    """
-        q1 and q2 are lists. Function returns a list of POS tagged tokens for both.
-    """
-    return nltk.pos_tag(q1), nltk.pos_tag(q2)
-
-
-def stemmer(tag_q1, tag_q2):
-    """
-        tag_q = tagged lists. Function returns a stemmed list.
-    """
-
-    stem_q1 = []
-    stem_q2 = []
-
-    for token in tag_q1:
-        stem_q1.append(stem(token))
-
-    for token in tag_q2:
-        stem_q2.append(stem(token))
-
-    return stem_q1, stem_q2
+    print json.dumps(wordsim, indent=2)
 
 
 def semanticSimilarity(q1, q2):
@@ -45,10 +35,30 @@ def semanticSimilarity(q1, q2):
     # stem_q1, stem_q2 = stemmer(tokens_q1, tokens_q2)
     tag_q1, tag_q2 = posTag(tokens_q1, tokens_q2)
 
-    for i, word1 in enumerate(tag_q1):
-        for j, word2 in enumerate(tag_q2):
-            if word1[1] == word2[1] and ('NN' in word1 or 'VB' in word1):
-                print word1, word2
+    sentence = []
+    for i, word in enumerate(tag_q1):
+        if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
+            sentence.append(word[0])
+
+    sense1 = Lesk(sentence)
+    sentence1Means = []
+    for word in sentence:
+        sentence1Means.append(sense1.lesk(word, sentence))
+
+    sentence = []
+    for i, word in enumerate(tag_q2):
+        if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
+            sentence.append(word[0])
+
+    sense2 = Lesk(sentence)
+    sentence2Means = []
+    for word in sentence:
+        sentence2Means.append(sense2.lesk(word, sentence))
+
+    # for i, word in enumerate(sentence1Means):
+    #     print sentence1Means[i][0], sentence2Means[i][0]
+
+    return computePath(sentence1Means, sentence2Means)
 
 if __name__ == '__main__':
     train = pd.read_csv('data/train.csv')
@@ -62,11 +72,8 @@ if __name__ == '__main__':
     count = 0
 
     for row in train_qs.itertuples():
-        try:
-            count += 1
-            q1 = row[2].decode('utf8', errors='ignore')
-            q2 = row[3].decode('utf8', errors='ignore')
-            semanticSimilarity(q1, q2)
-            # break
-        except TypeError:
-            pass
+        q1 = row[2].decode('utf8', errors='ignore')
+        q2 = row[3].decode('utf8', errors='ignore')
+        # print q1, q2
+        semanticSimilarity(q1, q2)
+        break
