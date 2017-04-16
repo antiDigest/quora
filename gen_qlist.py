@@ -35,6 +35,7 @@ for row in test_qs.itertuples():
 
 print 'Making lookup table'
 qlist = list(set(qlist))
+print len(qlist)
 doclist = {}
 for word in qlist:
     doclist[word] = 0
