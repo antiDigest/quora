@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from scipy import spatial
+from nltk.corpus import wordnet as wn
 
 
 def cosine(v1, v2):
@@ -12,6 +13,10 @@ def cosine(v1, v2):
     v2 = np.array(v2)
 
     return np.dot(v1, v2) / (np.sqrt(np.sum(v1**2)) * np.sqrt(np.sum(v2**2)))
+
+
+def path(set1, set2):
+    return wn.path_similarity(set1, set2)
 
 if __name__ == '__main__':
     from random import randint
