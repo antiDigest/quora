@@ -8,7 +8,7 @@ import json
 from stemming.porter import stem
 from lesk.lesk import Lesk
 from utils.tfidf import tfidf
-from utils.similarity import path
+from utils.similarity import path, wup, edit
 from utils.basic import tokenize, posTag, stemmer
 
 
@@ -16,15 +16,36 @@ def computePath(q1, q2):
     wordsim = {}
     # maxsim = 0.0
     for word1 in q1:
-        wordsim[word1[0]] = None
         maxsim = 0.0
         for word2 in q2:
-            # print word1[1], word2[1]
-            sim = path(wn.synset(word1[1]), wn.synset(word2[1]))
-            # print 'Path similarity', sim
+            if word1[1] == None or word2[1] == None:
+                sim = edit(word1[0], word2[0])
+            else:
+                # print word1[1], word2[1]
+                sim = path(wn.synset(word1[1]), wn.synset(word2[1]))
+                # print 'Path similarity', sim
             if sim > maxsim and sim != None:
                 maxsim = sim
-                wordsim[word1[0]] = (word2[0], sim)
+                wordsim[word1[0] + '_' + word2[0]] = sim
+
+    print json.dumps(wordsim, indent=2)
+
+
+def computeWup(q1, q2):
+    wordsim = {}
+    # maxsim = 0.0
+    for word1 in q1:
+        maxsim = 0.0
+        for word2 in q2:
+            if word1[1] == None or word2[1] == None:
+                sim = edit(word2[0], word1[0])
+            else:
+                # print word1[1], word2[1]
+                sim = wup(wn.synset(word1[1]), wn.synset(word2[1]))
+                # print 'Path similarity', sim
+            if sim > maxsim and sim != None:
+                maxsim = sim
+                wordsim[word1[0] + '_' + word2[0]] = sim
 
     print json.dumps(wordsim, indent=2)
 
@@ -45,6 +66,10 @@ def semanticSimilarity(q1, q2):
     for word in sentence:
         sentence1Means.append(sense1.lesk(word, sentence))
 
+    for word in tag_q1:
+        if word[0] not in sentence:
+            sentence1Means.append((word[0], None, None))
+
     sentence = []
     for i, word in enumerate(tag_q2):
         if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
@@ -55,10 +80,17 @@ def semanticSimilarity(q1, q2):
     for word in sentence:
         sentence2Means.append(sense2.lesk(word, sentence))
 
+    for word in tag_q2:
+        if word[0] not in sentence:
+            sentence2Means.append((word[0], None, None))
+
     # for i, word in enumerate(sentence1Means):
     #     print sentence1Means[i][0], sentence2Means[i][0]
 
-    return computePath(sentence1Means, sentence2Means)
+    computePath(sentence1Means, sentence2Means)
+    computeWup(sentence1Means, sentence2Means)
+
+    return
 
 if __name__ == '__main__':
     train = pd.read_csv('data/train.csv')
