@@ -2,6 +2,7 @@ import math
 import numpy as np
 from scipy import spatial
 from nltk.corpus import wordnet as wn
+from nltk.metrics import edit_distance
 
 
 def cosine(v1, v2):
@@ -17,6 +18,16 @@ def cosine(v1, v2):
 
 def path(set1, set2):
     return wn.path_similarity(set1, set2)
+
+
+def wup(set1, set2):
+    return wn.wup_similarity(set1, set2)
+
+
+def edit(word1, word2):
+    if float(edit_distance(word1, word2)) == 0.0:
+        return 0.0
+    return 1.0 / float(edit_distance(word1, word2))
 
 if __name__ == '__main__':
     from random import randint
