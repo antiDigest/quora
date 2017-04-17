@@ -12,10 +12,10 @@ sys.setdefaultencoding('utf-8')
 
 print 'Into the loop I go'
 # train = pd.read_csv('data/train.csv')
-test = pd.read_csv('data/test.csv')
+test = pd.read_csv('data/train.csv')
 
 # train_qs = train[['id', 'question1', 'question2', 'is_duplicate']]
-test_qs = test[['test_id', 'question1', 'question2']]
+test_qs = test[['id', 'question1', 'question2']]
 
 qlist = []
 count = 0
@@ -37,6 +37,7 @@ print 'Making lookup table'
 qlist = list(set(qlist))
 print len(qlist)
 doclist = {}
+count = 0
 for word in qlist:
     doclist[word] = 0
     for row in test_qs.itertuples():
@@ -44,6 +45,9 @@ for word in qlist:
             doclist[word] += 1
         if word in str(row[3]) and len(str(row[3])) > 10:
             doclist[word] += 1
+    count += 1
+    if count % 10000 == 0:
+        print count
 
 
 print doclist
