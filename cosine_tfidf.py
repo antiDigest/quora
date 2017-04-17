@@ -7,6 +7,7 @@ import json
 from utils.similarity import cosine
 from utils.tfidf import tfidf
 
+import sys
 reload(sys)
 sys.setdefaultencoding('utf-8')
 
@@ -50,7 +51,7 @@ qlist = json.loads(open('data/qlist.json').read())
 print 'now starting'
 with open('submission.csv', 'a') as f:
     count = 0
-    for row in test_qs.itertuples():
+    for row in test_qs[121423:].itertuples():
         if len(str(row[2])) > 10 and len(str(row[3])) > 10:
             wordvec1 = word_tokenize(
                 row[2].lower().decode('utf-8', errors='ignore'))
@@ -72,5 +73,5 @@ with open('submission.csv', 'a') as f:
             f.write(str(row[1]) + "," + '0' + '\n')
 
         count += 1
-        if count % 100000 == 0:
+        if count % 10000 == 0:
             print str(row[1]) + "," + str(cosine(vec1, vec2))
