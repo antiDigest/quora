@@ -28,7 +28,7 @@ def computePath(q1, q2):
                 maxsim = sim
                 wordsim[word1[0] + '_' + word2[0]] = sim
 
-    print json.dumps(wordsim, indent=2)
+    return wordsim
 
 
 def computeWup(q1, q2):
@@ -47,7 +47,7 @@ def computeWup(q1, q2):
                 maxsim = sim
                 wordsim[word1[0] + '_' + word2[0]] = sim
 
-    print json.dumps(wordsim, indent=2)
+    return wordsim
 
 
 def semanticSimilarity(q1, q2):
