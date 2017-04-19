@@ -44,3 +44,48 @@ The best sense is the one with the max overall score.
 3.	From Word Embeddings to Document Distances
 
 4.	
+
+## TODO -- Project
+
+1.	Due April 26th -- in class
+
+2.	Project Report -- Hard Copy
+
+3.	Demo to the TA -- will be scheduled b/w 4/26/2017 to 5/3/2017
+
+### Report Formart
+
+*	Technical Paper Style
+
+*	Mention References
+
+*	Write Logically
+
+#### Content (5-6 Pages)
+
+*	Title
+
+*	Name
+
+*	Abstract (100-200 words)
+
+*	Introduction (problem description)
+
+*	Related Work (by others, if any)
+
+*	Approach (Justify it)
+
+*	Implementation
+	
+	-	Data
+
+	-	Software Architecture
+
+*	Experiments and Results
+
+*	Conclusions (Assessment of the complete project, your take on the whole project)
+
+*	References
+
+
+
