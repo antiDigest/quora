@@ -1,56 +1,78 @@
 
 from nltk import word_tokenize
 import pandas as pd
+import numpy as np
+import nltk
+import re
+
+from sklearn.metrics.pairwise import linear_kernel
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from collections import Counter
 import json
 
 from utils.similarity import cosine
-from utils.tfidf import tfidf
+
 import sys
-reload(sys)
-sys.setdefaultencoding('utf-8')
 
-print 'Into the loop I go'
-# train = pd.read_csv('data/train.csv')
-test = pd.read_csv('data/train.csv')
-
-# train_qs = train[['id', 'question1', 'question2', 'is_duplicate']]
-test_qs = test[['id', 'question1', 'question2']]
-
-qlist = []
-count = 0
-for row in test_qs.itertuples():
-    # print row
-    try:
-        if len(row[2]) > 10:
-            q1 = word_tokenize(row[2].lower().decode('utf-8', errors='ignore'))
-        if len(row[3]) > 10:
-            q2 = word_tokenize(row[3].lower().decode('utf-8', errors='ignore'))
-        qlist += q1 + q2
-        count += 1
-        if count % 100000 == 0:
-            print 'At', count
-    except TypeError or UnicodeDecodeError:
-        pass
-
-print 'Making lookup table'
-qlist = list(set(qlist))
-print len(qlist)
-doclist = {}
-count = 0
-for word in qlist:
-    doclist[word] = 0
-    for row in test_qs.itertuples():
-        if word in str(row[2]) and len(str(row[2])) > 10:
-            doclist[word] += 1
-        if word in str(row[3]) and len(str(row[3])) > 10:
-            doclist[word] += 1
-    count += 1
-    if count % 10000 == 0:
-        print count
+STOP_WORDS = nltk.corpus.stopwords.words()
 
 
-print doclist
-print 'All Questions added to list'
-with open('data/doclist.json', 'w') as f:
-    f.write(json.dumps(doclist, indent=2))
+def clean_sentence(val):
+    "remove chars that are not letters or numbers, downcase, then remove stop words"
+    regex = re.compile('([^\s\w]|_)+')
+    sentence = regex.sub('', val).lower()
+    sentence = sentence.split(" ")
+
+    for word in list(sentence):
+        if word in STOP_WORDS:
+            sentence.remove(word)
+
+    sentence = " ".join(sentence)
+    return sentence
+
+
+def fit_tfs(X):
+    tfidf = TfidfVectorizer(tokenizer=word_tokenize)
+
+    tdm = tfidf.fit_transform(X)
+
+    print tdm.shape
+    # print tdm.stop_words_
+
+    return tdm
+
+data = pd.read_csv('data/train.csv')
+data = data.dropna(how="any")
+X_set1 = data[data['question1'].str.len() >= 10]['question1']
+X_set2 = data[data['question2'].str.len() >= 10]['question2']
+y = data['is_duplicate']
+X = X_set1.append(X_set2, ignore_index=True)
+
+print 'Cleaning Data, this might take some time.'
+for col in ['question1', 'question2']:
+    data[col] = data[col].apply(clean_sentence)
+
+data.to_csv('data/cleaned_train.csv')
+
+
+# print 'Making Term-Document Matrix'
+# tdm = fit_tfs(X).toarray()
+
+# # print data.shape
+
+# # print 'Calculating similarities'
+# # cosine_similarities = cosine_similarity(
+# #     tdm[:data.shape[0]], tdm[data.shape[0]:])
+
+# print 'Lets check similarity'
+# # with open('data/submit.csv', 'w') as f:
+# for i in range(data.shape[0]):
+#     print i, y[i], cosine(tdm[i], tdm[data.shape[0] + i - 1])
+#     # f.write(data['test_id'][i] + ',' + cosine_similarities[i] + '\n')
+
+# # print 'Calculating first cosine similarity'
+# # cosine_similarities = linear_kernel(tfidf, tfidf[404290]).flatten()
+
+# # print cosine_similarities
