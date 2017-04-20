@@ -66,15 +66,15 @@ print 'Exported Cleaned train Data, no need for cleaning'
 #     X_train[col] = X_train[col].apply(clean_sentence)
 
 print 'Getting the test sets.'
-X_test = pd.read_csv('data/test.csv')
-X_test = X_test.dropna(how="any")
+X_test = pd.read_csv('data/cleaned_test.csv')
+# X_test = X_test.dropna(how="any")
 
-print 'Cleaning test Data, this might take time'
-for col in ['question1', 'question2']:
-    X_test[col] = X_test[col].apply(clean_sentence)
+# print 'Cleaning test Data, this might take time'
+# for col in ['question1', 'question2']:
+#     X_test[col] = X_test[col].apply(clean_sentence)
 
-print('Exporting cleaned test set to a new file for easy reference')
-X_test.to_csv('data/cleaned_test.csv', index=False)
+# print('Exporting cleaned test set to a new file for easy reference')
+# X_test.to_csv('data/cleaned_test.csv', index=False)
 
 print 'Now training Doc2vec over test documents'
 from gensim.models.doc2vec import Doc2Vec
@@ -96,35 +96,36 @@ cores = multiprocessing.cpu_count()
 print 'How many cores does a mac have ?', cores
 assert gensim.models.doc2vec.FAST_VERSION > -1
 
-print('Concatenating test data')
-X = concatenate(X_test)
+print('Concatenating train data')
+X = concatenate(X_train)
 labels = []
-for label in X_test['id'].tolist():
+for label in X_train['id'].tolist():
     labels.append('SENT_%s_1' % label)
-for label in X_test['id'].tolist():
+for label in X_train['id'].tolist():
     labels.append('SENT_%s_2' % label)
 
-print('Training doc2vec model over the test data.')
+print('Training doc2vec model over the train data.')
 docs = LabeledLineSentence(X.tolist(), labels)
 it = docs.__iter__()
-model1 = Doc2Vec(it, size=10, window=4, min_count=0, workers=4)
+model1 = Doc2Vec(size=10, window=4, min_count=0, workers=3)
+model1.build_vocab(it)
 
-for epoch in range(100):
-    model1.train(it)
+for epoch in range(5):
+    model1.train(it, total_examples=len(labels))
     model1.alpha -= 0.0002  # decrease the learning rate
-    model1.min_alpha = model1.alpha  # fix the learning rate, no deca
-    model1.train(it)
+    model1.min_alpha = model1.alpha  # fix the learning rate, no decay
+    model1.train(it, total_examples=len(labels))
 
 print 'Printing doc2vec output on test documents.'
-X_test.index = np.arange(0, X_test.shape[0])
+# X_train.index = np.arange(0, X_test.shape[0])
 # print(X_test)
 count = 0
-with open('data/submit_test.csv', 'w') as f:
+with open('data/submit_train.csv', 'w') as f:
     for i in range(X_test['question1'].shape[0]):
         doc1 = word_tokenize(X_test['question1'][i])
         doc2 = word_tokenize(X_test['question2'][i])
 
         docvec1 = model1.infer_vector(doc1)
         docvec2 = model1.infer_vector(doc2)
-        print(X_test['test_id'], cosine(docvec1, docvec2))
-        f.write(X_test['test_id'] + ',' + cosine(docvec1, docvec2) + '\n')
+        print(str(X_train['id']) + ', ' + str(cosine(docvec1, docvec2)))
+        f.write(X_train['id'] + ',' + cosine(docvec1, docvec2) + '\n')
