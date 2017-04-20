@@ -3,6 +3,7 @@ from nltk import word_tokenize
 import pandas as pd
 from nltk.corpus import wordnet as wn
 
+import numpy as np
 import json
 
 from stemming.porter import stem
@@ -11,43 +12,76 @@ from utils.tfidf import tfidf
 from utils.similarity import path, wup, edit
 from utils.basic import tokenize, posTag, stemmer
 
-
-def computePath(q1, q2):
-    wordsim = {}
-    # maxsim = 0.0
-    for word1 in q1:
-        maxsim = 0.0
-        for word2 in q2:
-            if word1[1] == None or word2[1] == None:
-                sim = edit(word1[0], word2[0])
-            else:
-                # print word1[1], word2[1]
-                sim = path(wn.synset(word1[1]), wn.synset(word2[1]))
-                # print 'Path similarity', sim
-            if sim > maxsim and sim != None:
-                maxsim = sim
-                wordsim[word1[0] + '_' + word2[0]] = sim
-
-    return wordsim
+from sklearn.metrics import log_loss
 
 
 def computeWup(q1, q2):
-    wordsim = {}
-    # maxsim = 0.0
-    for word1 in q1:
-        maxsim = 0.0
-        for word2 in q2:
-            if word1[1] == None or word2[1] == None:
-                sim = edit(word2[0], word1[0])
-            else:
-                # print word1[1], word2[1]
-                sim = wup(wn.synset(word1[1]), wn.synset(word2[1]))
-                # print 'Path similarity', sim
-            if sim > maxsim and sim != None:
-                maxsim = sim
-                wordsim[word1[0] + '_' + word2[0]] = sim
 
-    return wordsim
+    R = np.zeros((len(q1), len(q2)))
+
+    for i in range(len(q1)):
+        for j in range(len(q2)):
+            if q1[i][1] == None or q2[j][1] == None:
+                sim = edit(q1[i][0], q2[j][0])
+            else:
+                sim = wup(wn.synset(q1[i][1]), wn.synset(q2[j][1]))
+
+            if sim == None:
+                sim = edit(q1[i][0], q2[j][0])
+
+            R[i, j] = sim
+
+    # print R
+
+    return R
+
+
+def computePath(q1, q2):
+
+    R = np.zeros((len(q1), len(q2)))
+
+    for i in range(len(q1)):
+        for j in range(len(q2)):
+            if q1[i][1] == None or q2[j][1] == None:
+                sim = edit(q1[i][0], q2[j][0])
+            else:
+                sim = path(wn.synset(q1[i][1]), wn.synset(q2[j][1]))
+
+            if sim == None:
+                sim = edit(q1[i][0], q2[j][0])
+
+            R[i, j] = sim
+
+    # print R
+
+    return R
+
+
+def overallSim(q1, q2, R):
+
+    sum_X = 0.0
+    sum_Y = 0.0
+
+    for i in range(len(q1)):
+        max_i = 0.0
+        for j in range(len(q2)):
+            if R[i, j] > max_i:
+                max_i = R[i, j]
+        sum_X += max_i
+
+    for i in range(len(q1)):
+        max_j = 0.0
+        for j in range(len(q2)):
+            if R[i, j] > max_j:
+                max_j = R[i, j]
+        sum_Y += max_j
+
+    if (float(len(q1)) + float(len(q2))) == 0.0:
+        return 0.0
+
+    overall = (sum_X + sum_Y) / (2 * (float(len(q1)) + float(len(q2))))
+
+    return overall
 
 
 def semanticSimilarity(q1, q2):
@@ -66,10 +100,6 @@ def semanticSimilarity(q1, q2):
     for word in sentence:
         sentence1Means.append(sense1.lesk(word, sentence))
 
-    for word in tag_q1:
-        if word[0] not in sentence:
-            sentence1Means.append((word[0], None, None))
-
     sentence = []
     for i, word in enumerate(tag_q2):
         if 'NN' in word[1] or 'JJ' in word[1] or 'VB' in word[1]:
@@ -80,32 +110,40 @@ def semanticSimilarity(q1, q2):
     for word in sentence:
         sentence2Means.append(sense2.lesk(word, sentence))
 
-    for word in tag_q2:
-        if word[0] not in sentence:
-            sentence2Means.append((word[0], None, None))
-
     # for i, word in enumerate(sentence1Means):
-    #     print sentence1Means[i][0], sentence2Means[i][0]
+    #     print sentence1Means[i][1], sentence2Means[i][1]
 
-    computePath(sentence1Means, sentence2Means)
-    computeWup(sentence1Means, sentence2Means)
+    R1 = computePath(sentence1Means, sentence2Means)
+    R2 = computeWup(sentence1Means, sentence2Means)
 
-    return
+    R = (R1 + R2) / 2
+
+    return overallSim(sentence1Means, sentence2Means, R)
 
 if __name__ == '__main__':
-    train = pd.read_csv('data/train.csv')
+    train = pd.read_csv('data/cleaned_train.csv')
 
     train_qs = train[['id', 'question1', 'question2', 'is_duplicate']]
+    y_train = train['is_duplicate']
 
-    # sense = Lesk()
-
-    sum1 = []
-    sum2 = []
+    y_pred = []
     count = 0
+    print('Calculating similarity for the training data, please wait.')
 
     for row in train_qs.itertuples():
-        q1 = row[2].decode('utf8', errors='ignore')
-        q2 = row[3].decode('utf8', errors='ignore')
-        # print q1, q2
-        semanticSimilarity(q1, q2)
-        break
+        # print row
+        q1 = str(row[2]).decode('utf8', errors='ignore')
+        q2 = str(row[3]).decode('utf8', errors='ignore')
+
+        sim = semanticSimilarity(q1, q2)
+        count += 1
+        if count % 10000 == 0:
+            print count, sim, row[4]
+        y_pred.append(sim)
+
+    output = pd.DataFrame(list(zip(train_qs['id'], y_pred)), columns=[
+                          'id', 'similarity'])
+
+    output.to_csv('data/semantic_train.csv')
+
+    print log_loss(y_train, np.array(y_pred))
