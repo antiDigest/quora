@@ -35,7 +35,7 @@ class Lesk(object):
         senses = self.getSenses(word)
 
         if senses == []:
-            return word.lower(), senses
+            return {word.lower(): senses}
 
         return self.getGloss(senses)
 
@@ -56,7 +56,10 @@ class Lesk(object):
         if self.meanings[word2] == '':
             gloss_set2 = self.getAll(word2)
         else:
+            # print 'here'
             gloss_set2 = self.getGloss([wn.synset(self.meanings[word2])])
+
+        # print gloss_set2
 
         score = {}
         for i in gloss_set1.keys():
@@ -64,6 +67,7 @@ class Lesk(object):
             for j in gloss_set2.keys():
                 score[i] += self.Score(gloss_set1[i], gloss_set2[j])
 
+        bestSense = None
         max_score = 0
         for i in gloss_set1.keys():
             if score[i] > max_score:
@@ -78,13 +82,20 @@ class Lesk(object):
         word_sense = []
         meaning = {}
 
-        for sense in self.getSenses(word):
+        senses = self.getSenses(word)
+
+        for sense in senses:
             meaning[sense.name()] = 0
 
         for word_context in context:
             if not word == word_context:
                 score = self.overlapScore(word, word_context)
+                if score[0] == None:
+                    continue
                 meaning[score[0]] += score[1]
+
+        if senses == []:
+            return word, None, None
 
         self.meanings[word] = max(meaning.keys(), key=lambda x: meaning[x])
 
