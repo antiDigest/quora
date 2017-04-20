@@ -10,12 +10,12 @@ x_train = pd.read_csv('data/train.csv')
 y_train = x_train['is_duplicate']
 ids = x_train['id']
 
-out = pd.read_csv('data/submission_train.csv')
+out = pd.read_csv('data/submit_train.csv')
 y_pred = out['is_duplicate']
 
 
 def output(x):
-    if x >= 0.75:
+    if x >= 0.075:
         return 1
     else:
         return 0
@@ -69,9 +69,9 @@ class_names = ['Duplicate', 'Not Duplicate']
 
 # Plot non-normalized confusion matrix
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=class_names, img='tfidf.png',
+plot_confusion_matrix(cnf_matrix, classes=class_names, img='doc2vec.png',
                       title='Confusion matrix, without normalization')
 
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=class_names, img='tfidf_normalised.png', normalize=True,
+plot_confusion_matrix(cnf_matrix, classes=class_names, img='doc2vec_normalised.png', normalize=True,
                       title='Confusion matrix, normalised')
