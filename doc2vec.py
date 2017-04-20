@@ -56,17 +56,17 @@ def concatenate(data):
 
     return X
 
-X_train = pd.read_csv('data/cleaned_train.csv')
-X_train = X_train.dropna(how="any")
+X_train = pd.read_csv('data/cleaned_test.csv')
+# X_train = X_train.dropna(how="any")
 
-y = X_train['is_duplicate']
+# y = X_train['is_duplicate']
 
-print 'Exported Cleaned train Data, no need for cleaning'
+print 'Exported Cleaned test Data, no need for cleaning'
 # for col in ['question1', 'question2']:
 #     X_train[col] = X_train[col].apply(clean_sentence)
 
-print 'Getting the test sets.'
-X_test = pd.read_csv('data/cleaned_test.csv')
+# print 'Getting the test sets.'
+# X_test = pd.read_csv('data/cleaned_test.csv')
 # X_test = X_test.dropna(how="any")
 
 # print 'Cleaning test Data, this might take time'
@@ -89,7 +89,7 @@ class LabeledLineSentence(object):
 
     def __iter__(self):
         for idx, doc in enumerate(self.doc_list):
-            yield doc2vec.TaggedDocument(words=word_tokenize(doc), tags=[self.labels_list[idx]])
+            yield doc2vec.TaggedDocument(words=word_tokenize(str(doc)), tags=[self.labels_list[idx]])
 
 import multiprocessing
 cores = multiprocessing.cpu_count()
@@ -99,9 +99,9 @@ assert gensim.models.doc2vec.FAST_VERSION > -1
 print('Concatenating train data')
 X = concatenate(X_train)
 labels = []
-for label in X_train['id'].tolist():
+for label in X_train['test_id'].tolist():
     labels.append('SENT_%s_1' % label)
-for label in X_train['id'].tolist():
+for label in X_train['test_id'].tolist():
     labels.append('SENT_%s_2' % label)
 
 print('Training doc2vec model over the train data.')
@@ -110,22 +110,32 @@ it = docs.__iter__()
 model1 = Doc2Vec(size=10, window=4, min_count=0, workers=3)
 model1.build_vocab(it)
 
-for epoch in range(5):
-    model1.train(it, total_examples=len(labels))
+for epoch in range(10):
+    model1.train(it, total_examples=len(labels), epochs=1)
     model1.alpha -= 0.0002  # decrease the learning rate
     model1.min_alpha = model1.alpha  # fix the learning rate, no decay
-    model1.train(it, total_examples=len(labels))
+    model1.train(it, total_examples=len(labels), epochs=1)
+
+print 'Getting question lists'
+X_train_qs_1 = X_train['question1'].tolist()
+X_train_qs_2 = X_train['question2'].tolist()
+# is_duplicate = X_train['is_duplicate'].tolist()
 
 print 'Printing doc2vec output on test documents.'
 # X_train.index = np.arange(0, X_test.shape[0])
 # print(X_test)
+
 count = 0
-with open('data/submit_train.csv', 'w') as f:
-    for i in range(X_test['question1'].shape[0]):
-        doc1 = word_tokenize(X_test['question1'][i])
-        doc2 = word_tokenize(X_test['question2'][i])
+with open('data/submit_test.csv', 'w') as f:
+    for i in X_train['test_id'].tolist():
+        doc1 = word_tokenize(str(X_train_qs_1[count]))
+        doc2 = word_tokenize(str(X_train_qs_2[count]))
 
         docvec1 = model1.infer_vector(doc1)
         docvec2 = model1.infer_vector(doc2)
-        print(str(X_train['id']) + ', ' + str(cosine(docvec1, docvec2)))
-        f.write(X_train['id'] + ',' + cosine(docvec1, docvec2) + '\n')
+
+        sim = cosine(docvec1, docvec2)
+        count += 1
+        if count % 10000 == 0:
+            print(str(count) + ", " + str(i) + ', ' + str(sim))
+        f.write(str(i) + ',' + str(sim) + '\n')
