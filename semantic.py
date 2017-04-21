@@ -69,9 +69,9 @@ def overallSim(q1, q2, R):
                 max_i = R[i, j]
         sum_X += max_i
 
-    for i in range(len(q1)):
+    for j in range(len(q2)):
         max_j = 0.0
-        for j in range(len(q2)):
+        for i in range(len(q1)):
             if R[i, j] > max_j:
                 max_j = R[i, j]
         sum_Y += max_j
@@ -140,10 +140,11 @@ if __name__ == '__main__':
         if count % 10000 == 0:
             print count, sim, row[4]
         y_pred.append(sim)
+        # break
 
     output = pd.DataFrame(list(zip(train_qs['id'], y_pred)), columns=[
                           'id', 'similarity'])
 
     output.to_csv('data/semantic_train.csv')
 
-    print log_loss(y_train, np.array(y_pred))
+    # print log_loss(y_train, np.array(y_pred))
