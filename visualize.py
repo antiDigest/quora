@@ -8,14 +8,26 @@ import matplotlib.pyplot as plt
 
 x_train = pd.read_csv('data/train.csv')
 y_train = x_train['is_duplicate']
-ids = x_train['id']
+# ids = x_train['id']
 
 out = pd.read_csv('data/submit_train.csv')
 y_pred = out['is_duplicate']
 
+ids = out['id']
+
+print 'train values for ids'
+print max(y_pred.tolist()), min(y_pred.tolist())
+
+min_val = min(y_pred.tolist())
+max_val = max(y_pred.tolist())
+
+y_pred = (y_pred - min_val) / ((max_val) - min_val)
+
+print max(y_pred.tolist()), min(y_pred.tolist())
+
 
 def output(x):
-    if x >= 0.075:
+    if x >= 0.25:
         return 1
     else:
         return 0
@@ -54,7 +66,7 @@ def plot_confusion_matrix(cm, classes, img, normalize=False, title='Confusion ma
     plt.savefig('visual/' + img)
 
 
-print log_loss(y_train, y_pred)
+print log_loss(y_train[ids], y_pred)
 
 y = []
 for row in y_pred.tolist():
@@ -62,7 +74,7 @@ for row in y_pred.tolist():
 
 y = np.array(y)
 
-cnf_matrix = confusion_matrix(y_train, y)
+cnf_matrix = confusion_matrix(y_train[ids], y)
 np.set_printoptions(precision=2)
 
 class_names = ['Duplicate', 'Not Duplicate']
