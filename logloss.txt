@@ -1,0 +1,9 @@
+LOG LOSS
+
+TFIDF:	0.665
+
+Doc2Vec 10: 1.06336212205
+Doc2Vec 15: 1.03595046296
+Doc2Vec 50: 
+
+Semantic: 
