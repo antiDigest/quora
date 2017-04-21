@@ -13,10 +13,10 @@ sys.setdefaultencoding('utf-8')
 
 print 'Into the loop I go'
 # train = pd.read_csv('data/train.csv')
-test = pd.read_csv('data/test.csv')
+test = pd.read_csv('data/train.csv')
 
 # train_qs = train[['id', 'question1', 'question2', 'is_duplicate']]
-test_qs = test[['test_id', 'question1', 'question2']]
+test_qs = test[['id', 'question1', 'question2']]
 
 # qlist = []
 # count = 0
@@ -51,7 +51,7 @@ qlist = json.loads(open('data/qlist.json').read())
 print 'now starting'
 with open('submission.csv', 'a') as f:
     count = 0
-    for row in test_qs[121423:].itertuples():
+    for row in test_qs.itertuples():
         if len(str(row[2])) > 10 and len(str(row[3])) > 10:
             wordvec1 = word_tokenize(
                 row[2].lower().decode('utf-8', errors='ignore'))
@@ -72,6 +72,8 @@ with open('submission.csv', 'a') as f:
         else:
             f.write(str(row[1]) + "," + '0' + '\n')
 
+        print str(row[1]) + "," + str(cosine(vec1, vec2))
+        break
         count += 1
         if count % 10000 == 0:
             print str(row[1]) + "," + str(cosine(vec1, vec2))
