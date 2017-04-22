@@ -1,4 +1,5 @@
 from sklearn.metrics import log_loss, confusion_matrix
+from sklearn.metrics.pairwise import sigmoid_kernel
 import pandas as pd
 import numpy as np
 
@@ -10,7 +11,7 @@ x_train = pd.read_csv('data/train.csv')
 y_train = x_train['is_duplicate']
 # ids = x_train['id']
 
-out = pd.read_csv('data/submit_train.csv')
+out = pd.read_csv('data/semantic_train.csv')
 y_pred = out['is_duplicate']
 
 ids = out['id']
@@ -21,13 +22,27 @@ print max(y_pred.tolist()), min(y_pred.tolist())
 min_val = min(y_pred.tolist())
 max_val = max(y_pred.tolist())
 
-y_pred = (y_pred - min_val) / ((max_val) - min_val)
 
-print max(y_pred.tolist()), min(y_pred.tolist())
+def sigmoid(z):
+    z = np.array(z)
+    z = 1.0 / (1.0 + np.exp(-z))
+    return z
+
+
+def scale(z, min_val, max_val):
+    z = np.array(z)
+    z = (z - min_val) / (max_val - min_val)
+    return z
+
+y_pred = sigmoid(y_pred)
+
+# y_pred = scale(y_pred, min_val, max_val)
+
+# print max(y_pred.tolist()), min(y_pred.tolist())
 
 
 def output(x):
-    if x >= 0.25:
+    if x > 0.25:
         return 1
     else:
         return 0
@@ -81,9 +96,9 @@ class_names = ['Duplicate', 'Not Duplicate']
 
 # Plot non-normalized confusion matrix
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=class_names, img='doc2vec.png',
+plot_confusion_matrix(cnf_matrix, classes=class_names, img='semantic.png',
                       title='Confusion matrix, without normalization')
 
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=class_names, img='doc2vec_normalised.png', normalize=True,
+plot_confusion_matrix(cnf_matrix, classes=class_names, img='semantic_normalised.png', normalize=True,
                       title='Confusion matrix, normalised')
