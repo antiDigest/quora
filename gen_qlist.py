@@ -55,24 +55,3 @@ for col in ['question1', 'question2']:
     data[col] = data[col].apply(clean_sentence)
 
 data.to_csv('data/cleaned_train.csv')
-
-
-# print 'Making Term-Document Matrix'
-# tdm = fit_tfs(X).toarray()
-
-# # print data.shape
-
-# # print 'Calculating similarities'
-# # cosine_similarities = cosine_similarity(
-# #     tdm[:data.shape[0]], tdm[data.shape[0]:])
-
-# print 'Lets check similarity'
-# # with open('data/submit.csv', 'w') as f:
-# for i in range(data.shape[0]):
-#     print i, y[i], cosine(tdm[i], tdm[data.shape[0] + i - 1])
-#     # f.write(data['test_id'][i] + ',' + cosine_similarities[i] + '\n')
-
-# # print 'Calculating first cosine similarity'
-# # cosine_similarities = linear_kernel(tfidf, tfidf[404290]).flatten()
-
-# # print cosine_similarities
