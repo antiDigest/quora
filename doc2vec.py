@@ -56,7 +56,8 @@ def concatenate(data):
 
     return X
 
-X_train = pd.read_csv('data/cleaned_train.csv')
+X_train = pd.read_csv('data/cleaned_test.csv')
+X_test = pd.read_csv('data/test.csv')
 # X_train = X_train.dropna(how="any")
 
 # y = X_train['is_duplicate']
@@ -81,6 +82,12 @@ from gensim.models.doc2vec import Doc2Vec
 from gensim.models import doc2vec
 
 
+def sigmoid(z):
+    # z = np.array(z)
+    z = 1.0 / (1.0 + np.exp(-z))
+    return z
+
+
 class LabeledLineSentence(object):
 
     def __init__(self, doc_list, labels_list):
@@ -99,18 +106,18 @@ assert gensim.models.doc2vec.FAST_VERSION > -1
 print('Concatenating train data')
 X = concatenate(X_train)
 labels = []
-for label in X_train['id'].tolist():
+for label in X_train['test_id'].tolist():
     labels.append('SENT_%s_1' % label)
-for label in X_train['id'].tolist():
+for label in X_train['test_id'].tolist():
     labels.append('SENT_%s_2' % label)
 
 print('Training doc2vec model over the train data.')
 docs = LabeledLineSentence(X.tolist(), labels)
 it = docs.__iter__()
-model1 = Doc2Vec(size=50, window=4, min_count=0, workers=3)
+model1 = Doc2Vec(size=100, window=4, min_count=0, workers=3)
 model1.build_vocab(it)
 
-for epoch in range(10):
+for epoch in range(20):
     model1.train(it, total_examples=len(labels), epochs=1)
     model1.alpha -= 0.0002  # decrease the learning rate
     model1.min_alpha = model1.alpha  # fix the learning rate, no decay
@@ -119,26 +126,35 @@ for epoch in range(10):
 print 'Getting question lists'
 X_train_qs_1 = X_train['question1'].tolist()
 X_train_qs_2 = X_train['question2'].tolist()
-is_duplicate = X_train['is_duplicate'].tolist()
+# is_duplicate = X_train['is_duplicate'].tolist()
 
 print 'Printing doc2vec output on test documents.'
 # X_train.index = np.arange(0, X_test.shape[0])
 # print(X_test)
 
 count = 0
-with open('data/submit_train.csv', 'w') as f:
-    f.write('id,is_duplicate\n')
-    for i in X_train['id'].tolist():
-        doc1 = word_tokenize(str(X_train_qs_1[count]))
-        doc2 = word_tokenize(str(X_train_qs_2[count]))
+with open('data/submit_test.csv', 'w') as f:
+    f.write('test_id,is_duplicate\n')
+    output = []
+    for i in X_test['test_id'].tolist():
+        try:
+            doc1 = word_tokenize(str(X_train_qs_1[i]))
+            doc2 = word_tokenize(str(X_train_qs_2[i]))
 
-        docvec1 = model1.infer_vector(doc1)
-        docvec2 = model1.infer_vector(doc2)
+            docvec1 = model1.infer_vector(doc1)
+            docvec2 = model1.infer_vector(doc2)
 
-        sim = cosine(docvec1, docvec2)
-        count += 1
-        if count % 10000 == 0:
-            print(str(count) + ", " + str(i) + ', ' +
-                  str(sim) + ', ' + str(is_duplicate[count]))
-        f.write(str(i) + ',' + str(sim) + '\n')
+            sim = sigmoid(cosine(docvec1, docvec2))
+            count += 1
+            if count % 10000 == 0:
+                print(str(count) + ", " + str(i) + ', ' + str(sim))
+            # output.append([i, sim])
+            f.write(str(i) + ',' + str(sim) + '\n')
+        except KeyError or IndexError:
+            # count += 1
+            sim = 0.0
+            output.append([i, sim])
         # break
+
+# df = pd.DataFrame(output, columns=['id', 'similarity'])
+# df.to_csv('data/submit_test1.csv')
